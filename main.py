@@ -1,19 +1,54 @@
+from discord.ext import commands  # Bot Commands Frameworkをインポート
 import discord
-
-client = discord.Client()
-
-
-@client.event
-async def on_ready():
-    print('ログインしました')
+import dataclasses
+import requests
+import random
 
 
-@client.event
-async def on_message(message):
-    if message.author.bot:
-        return
-    if "かわいい" in message.content:
-        await message.channel.send('香風智乃のほうがかわいい')
+@dataclasses.dataclass
+class Config:
+    endpoint: str
+    token: str
+    cdn: str
+
+
+# コグとして用いるクラスを定義。
+class TestCog(commands.Cog):
+
+    # TestCogクラスのコンストラクタ。Botを受取り、インスタンス変数として保持。
+    def __init__(self, bot, config):
+        self.bot = bot
+        self.config = config
+
+    @commands.command()
+    async def chino(self, ctx):
+        resp = requests.get(
+            self.config.endpoint, headers={"Authorization": self.config.token}
+        ).json()["data"]["imgs"]
+        resp = random.choice(resp)
+        embed = discord.Embed(
+            title=resp["title"],
+            url=resp["originUrl"],
+            description=resp["artist"]["name"],
+            color=0x7accff
+        )
+        embed.set_thumbnail(
+            url=f"{self.config.cdn}/illusts/large/{resp['illustID']}.jpg"
+        )
+        embed.add_field(name="登録日", value=resp["date"], inline=False)
+        embed.set_footer(text="Provided from Gochiira")
+        await ctx.send(embed=embed)
+
+
+# クラスの定義。ClientのサブクラスであるBotクラスを継承。
+class MyBot(commands.Bot):
+
+    # Botの準備完了時に呼び出されるイベント
+    async def on_ready(self):
+        print('-----')
+        print(self.user.name)
+        print(self.user.id)
+        print('-----')
 
 
 if __name__ == '__main__':
@@ -22,4 +57,11 @@ if __name__ == '__main__':
     load_dotenv()
 
     TOKEN = os.getenv('BOT_TOKEN')
-    client.run(TOKEN)
+    config = Config(
+        endpoint=os.getenv('GOCHIIRA_ENDPOINT'),
+        token=os.getenv('GOCHIIRA_TOKEN'),
+        cdn=os.getenv('GOCHIIRA_CDN')
+    )
+    bot = commands.Bot(command_prefix='!')
+    bot.add_cog(TestCog(bot, config))
+    bot.run(TOKEN)

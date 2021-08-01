@@ -11,3 +11,6 @@ https://qiita.com/1ntegrale9/items/9d570ef8175cf178468f
 
 ## dotenvを使う
 https://maku77.github.io/python/env/dotenv.html
+
+## Bot commands frameworkを使う
+https://qiita.com/Lazialize/items/81f1430d9cd57fbd82fb
